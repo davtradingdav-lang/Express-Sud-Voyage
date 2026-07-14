@@ -1,0 +1,137 @@
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const { Pool } = require("pg");
+const { initDb } = require("./initdb");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const CAPACITE_BUS = 45;
+
+if (!process.env.DATABASE_URL) {
+  console.error("ERREUR: la variable d'environnement DATABASE_URL n'est pas definie.");
+  console.error("Sur Render, ajoute une base PostgreSQL et connecte-la a ce service.");
+}
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes("localhost") ? false : { rejectUnauthorized: false },
+});
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+
+function genererCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+app.get("/api/reservations", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, code, name, phone, trip_from, trip_to, trip_date, trip_time, status, created_at FROM reservations ORDER BY trip_date, trip_time"
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Erreur GET /api/reservations:", err);
+    res.status(500).json({ error: "Impossible de recuperer les reservations." });
+  }
+});
+
+app.post("/api/reservations", async (req, res) => {
+  const { name, phone, from, to, date, heure } = req.body;
+
+  if (!name || !phone || !from || !to || !date || !heure) {
+    return res.status(400).json({ error: "Tous les champs sont obligatoires." });
+  }
+  if (from === to) {
+    return res.status(400).json({ error: "Le depart et la destination doivent etre differents." });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const countResult = await client.query(
+      `SELECT COUNT(*) FROM reservations
+       WHERE trip_from = $1 AND trip_to = $2 AND trip_date = $3 AND trip_time = $4 AND status != 'annulee'
+       FOR UPDATE`,
+      [from, to, date, heure]
+    );
+    const prises = parseInt(countResult.rows[0].count, 10);
+
+    if (prises >= CAPACITE_BUS) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ error: "Ce trajet est complet pour cet horaire." });
+    }
+
+    let code = genererCode();
+    let tentatives = 0;
+    while (tentatives < 5) {
+      const exists = await client.query("SELECT 1 FROM reservations WHERE code = $1", [code]);
+      if (exists.rows.length === 0) break;
+      code = genererCode();
+      tentatives++;
+    }
+
+    const insertResult = await client.query(
+      `INSERT INTO reservations (code, name, phone, trip_from, trip_to, trip_date, trip_time, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'en_attente')
+       RETURNING id, code, name, phone, trip_from, trip_to, trip_date, trip_time, status, created_at`,
+      [code, name.trim(), phone.trim(), from, to, date, heure]
+    );
+
+    await client.query("COMMIT");
+    res.status(201).json(insertResult.rows[0]);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Erreur POST /api/reservations:", err);
+    res.status(500).json({ error: "Impossible d'enregistrer la reservation." });
+  } finally {
+    client.release();
+  }
+});
+
+app.patch("/api/reservations/:id", async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!["en_attente", "confirmee", "annulee"].includes(status)) {
+    return res.status(400).json({ error: "Statut invalide." });
+  }
+
+  try {
+    const result = await pool.query(
+      "UPDATE reservations SET status = $1 WHERE id = $2 RETURNING *",
+      [status, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Reservation introuvable." });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Erreur PATCH /api/reservations/:id:", err);
+    res.status(500).json({ error: "Impossible de mettre a jour la reservation." });
+  }
+});
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+async function start() {
+  try {
+    await initDb(pool);
+  } catch (err) {
+    console.error("Erreur lors de l'initialisation de la base de donnees:", err);
+  }
+  app.listen(PORT, () => {
+    console.log(`Serveur Express Sud Voyage demarre sur le port ${PORT}`);
+  });
+}
+
+start();

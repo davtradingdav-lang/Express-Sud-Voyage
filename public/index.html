@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Express Sud Voyage — Réservation</title>
+<style>
+  :root {
+    --vert: #0f3d2e;
+    --vert-fonce: #0a2e22;
+    --or: #c9a24b;
+    --or-clair: #e9d9ae;
+    --fond: #f4f6f3;
+    --texte: #1c2620;
+    --texte-doux: rgba(28,38,32,0.6);
+    --blanc: #ffffff;
+    --erreur: #b3261e;
+    --erreur-fond: #fce8e6;
+    --succes: #1e7a4c;
+    --succes-fond: #e6f4ec;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--fond);
+    color: var(--texte);
+  }
+
+  header {
+    background: var(--vert);
+    color: var(--fond);
+    padding: 28px 20px 34px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::after {
+    content: "";
+    position: absolute;
+    right: -30px;
+    top: -30px;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: rgba(201,162,75,0.12);
+  }
+
+  .header-inner {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: relative;
+  }
+
+  .logo {
+    width: 46px;
+    height: 46px;
+    background: var(--or);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 22px;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  header p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: var(--or-clair);
+  }
+
+  nav {
+    max-width: 640px;
+    margin: -18px auto 0;
+    padding: 0 20px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .tabs {
+    background: var(--blanc);
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 6px;
+    display: flex;
+    gap: 6px;
+  }
+
+  .tab {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 11px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(15,61,46,0.55);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .tab.active {
+    background: var(--vert);
+    color: var(--blanc);
+  }
+
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .card {
+    background: var(--blanc);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card h2 {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--vert);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--texte-doux);
+    margin-bottom: 6px;
+  }
+
+  .field { margin-top: 12px; }
+  .row .field:first-child, .row > div:first-child { margin-top: 12px; }
+
+  input, select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--blanc);
+    color: var(--texte);
+  }
+
+  input:focus, select:focus, button:focus-visible {
+    outline: 2px solid var(--or);
+    outline-offset: 1px;
+  }
+
+  .places-info {
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--texte-doux);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .note {
+    margin-top: 16px;
+    background: var(--fond);
+    border: 1px solid rgba(15,61,46,0.1);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 12.5px;
+    color: rgba(28,38,32,0.75);
+    line-height: 1.5;
+  }
+
+  button.primary {
+    width: 100%;
+    margin-top: 18px;
+    background: var(--vert);
+    color: var(--blanc);
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  button.primary:hover:not(:disabled) { background: var(--vert-fonce); }
+  button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .msg {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    line-height: 1.4;
+  }
+  .msg.error { background: var(--erreur-fond); color: var(--erreur); }
+  .msg.success { background: var(--succes-fond); color: var(--succes); }
+
+  .code-box {
+    margin-top: 14px;
+    border: 2px dashed var(--or);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+  .code-box .label { font-size: 11px; text-transform: uppercase; color: var(--texte-doux); font-weight: 700; }
+  .code-box .code { font-size: 28px; font-weight: 800; color: var(--vert); letter-spacing: 0.12em; margin: 4px 0; }
+  .code-box .hint { font-size: 12px; color: var(--texte-doux); }
+
+  .admin-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .admin-head h2 { margin: 0; font-size: 17px; color: var(--vert); }
+  .admin-head span { font-size: 12.5px; color: var(--texte-doux); }
+
+  .trip-card {
+    background: var(--blanc);
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  .trip-head {
+    background: var(--fond);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .trip-title { font-weight: 700; font-size: 14px; color: var(--vert); }
+  .trip-time { font-size: 12px; color: var(--texte-doux); margin-top: 2px; }
+  .trip-stats { text-align: right; font-size: 12px; }
+  .trip-stats .confirmed { font-weight: 700; color: var(--vert); }
+  .trip-stats .pending { color: var(--or); margin-top: 2px; }
+
+  .pax-row {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .pax-row:last-child { border-bottom: none; }
+  .pax-name { font-weight: 600; font-size: 14px; }
+  .pax-meta { font-size: 12px; color: var(--texte-doux); margin-top: 2px; }
+
+  .badge {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 7px;
+    white-space: nowrap;
+  }
+  .badge.attente { background: rgba(201,162,75,0.15); color: #8a6d1f; }
+  .badge.confirmee { background: var(--succes-fond); color: var(--succes); }
+  .badge.annulee { background: var(--erreur-fond); color: var(--erreur); }
+
+  .btn-sm {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 11px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-sm.confirm { background: var(--vert); color: var(--blanc); }
+  .btn-sm.cancel { background: transparent; border: 1px solid rgba(0,0,0,0.12); color: rgba(28,38,32,0.6); }
+
+  .actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--texte-doux);
+    font-size: 14px;
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">🚌</div>
+    <div>
+      <h1>Express Sud Voyage</h1>
+      <p>Réservation de trajet — paiement à l'agence</p>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="tabs">
+    <button class="tab active" id="tab-client">Réserver</button>
+    <button class="tab" id="tab-admin">Espace agence</button>
+  </div>
+</nav>
+
+<main>
+  <div id="global-error" class="msg error hidden"></div>
+
+  <section id="view-client">
+    <div class="card">
+      <h2>📋 Détails du trajet</h2>
+
+      <div class="row">
+        <div>
+          <label>Départ</label>
+          <select id="from"></select>
+        </div>
+        <div>
+          <label>Destination</label>
+          <select id="to"></select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="date">
+        </div>
+        <div class="field">
+          <label>Heure</label>
+          <select id="heure"></select>
+        </div>
+      </div>
+
+      <div class="places-info" id="places-info">👥 — places restantes</div>
+
+      <div class="row">
+        <div class="field">
+          <label>Nom complet</label>
+          <input type="text" id="name" placeholder="Votre nom">
+        </div>
+        <div class="field">
+          <label>Téléphone</label>
+          <input type="text" id="phone" placeholder="+235...">
+        </div>
+      </div>
+
+      <div class="note">Le paiement se fait en espèces à l'agence, avant l'embarquement. Présentez votre code au guichet.</div>
+
+      <button class="primary" id="btn-book">Confirmer la réservation</button>
+
+      <div id="client-msg" class="msg hidden"></div>
+      <div id="code-box" class="code-box hidden">
+        <div class="label">Votre code de réservation</div>
+        <div class="code" id="code-value"></div>
+        <div class="hint">À présenter au guichet avec le paiement</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-admin" class="hidden">
+    <div class="admin-head">
+      <h2>Réservations par trajet</h2>
+      <span id="admin-total">0 au total</span>
+    </div>
+    <div id="admin-list"></div>
+  </section>
+</main>
+
+<script>
+const VILLES = ["N'Djamena", "Moundou", "Doba", "Kélo", "Bongor"];
+const HORAIRES = [
+  { from: "N'Djamena", to: "Moundou", times: ["07h00", "14h00"] },
+  { from: "N'Djamena", to: "Doba", times: ["06h30", "15h00"] },
+  { from: "Moundou", to: "N'Djamena", times: ["08h00", "16h00"] },
+];
+const CAPACITE_BUS = 45;
+
+let reservations = [];
+
+function todayISO() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function horairesDisponibles(from, to) {
+  const match = HORAIRES.find(h => h.from === from && h.to === to);
+  return match ? match.times : [];
+}
+
+function remplirSelect(select, options) {
+  select.innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join("");
+}
+
+function showGlobalError(text) {
+  const el = document.getElementById("global-error");
+  el.textContent = text;
+  el.classList.remove("hidden");
+}
+function hideGlobalError() {
+  document.getElementById("global-error").classList.add("hidden");
+}
+
+const fromSelect = document.getElementById("from");
+const toSelect = document.getElementById("to");
+const dateInput = document.getElementById("date");
+const heureSelect = document.getElementById("heure");
+const placesInfo = document.getElementById("places-info");
+
+remplirSelect(fromSelect, VILLES);
+remplirSelect(toSelect, VILLES);
+fromSelect.value = "N'Djamena";
+toSelect.value = "Moundou";
+dateInput.value = todayISO();
+dateInput.min = todayISO();
+
+function majHoraires() {
+  const times = horairesDisponibles(fromSelect.value, toSelect.value);
+  if (times.length > 0) {
+    remplirSelect(heureSelect, times);
+    heureSelect.disabled = false;
+  } else {
+    heureSelect.innerHTML = "";
+    heureSelect.disabled = true;
+  }
+  majPlacesInfo();
+}
+
+function placesRestantes(from, to, date, heure) {
+  const prises = reservations.filter(r =>
+    r.trip_from === from && r.trip_to === to && r.trip_date === date && r.trip_time === heure && r.status !== "annulee"
+  ).length;
+  return CAPACITE_BUS - prises;
+}
+
+function majPlacesInfo() {
+  const times = horairesDisponibles(fromSelect.value, toSelect.value);
+  if (times.length === 0) {
+    placesInfo.textContent = "⚠️ Aucun horaire disponible pour ce trajet";
+    return;
+  }
+  const restantes = placesRestantes(fromSelect.value, toSelect.value, dateInput.value, heureSelect.value);
+  placesInfo.textContent = `👥 ${restantes} places restantes`;
+}
+
+fromSelect.addEventListener("change", majHoraires);
+toSelect.addEventListener("change", majHoraires);
+dateInput.addEventListener("change", majPlacesInfo);
+heureSelect.addEventListener("change", majPlacesInfo);
+
+majHoraires();
+
+const tabClient = document.getElementById("tab-client");
+const tabAdmin = document.getElementById("tab-admin");
+const viewClient = document.getElementById("view-client");
+const viewAdmin = document.getElementById("view-admin");
+
+tabClient.addEventListener("click", () => {
+  tabClient.classList.add("active");
+  tabAdmin.classList.remove("active");
+  viewClient.classList.remove("hidden");
+  viewAdmin.classList.add("hidden");
+});
+tabAdmin.addEventListener("click", () => {
+  tabAdmin.classList.add("active");
+  tabClient.classList.remove("active");
+  viewAdmin.classList.remove("hidden");
+  viewClient.classList.add("hidden");
+  chargerReservations();
+});
+
+async function chargerReservations() {
+  try {
+    const res = await fetch("/api/reservations");
+    if (!res.ok) throw new Error("Erreur reseau");
+    reservations = await res.json();
+    hideGlobalError();
+    renderAdmin();
+    majPlacesInfo();
+  } catch (e) {
+    showGlobalError("Impossible de charger les réservations. Vérifie ta connexion et recharge la page.");
+  }
+}
+
+document.getElementById("btn-book").addEventListener("click", async () => {
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const from = fromSelect.value;
+  const to = toSelect.value;
+  const date = dateInput.value;
+  const heure = heureSelect.value;
+
+  const msgEl = document.getElementById("client-msg");
+  const codeBox = document.getElementById("code-box");
+  msgEl.classList.add("hidden");
+  codeBox.classList.add("hidden");
+
+  if (!name || !phone) {
+    msgEl.textContent = "Merci de remplir le nom et le téléphone.";
+    msgEl.className = "msg error";
+    return;
+  }
+  if (from === to) {
+    msgEl.textContent = "Le départ et la destination doivent être différents.";
+    msgEl.className = "msg error";
+    return;
+  }
+  if (!heure) {
+    msgEl.textContent = "Aucun horaire disponible pour ce trajet.";
+    msgEl.className = "msg error";
+    return;
+  }
+
+  const btn = document.getElementById("btn-book");
+  btn.disabled = true;
+  btn.textContent = "Enregistrement...";
+
+  try {
+    const res = await fetch("/api/reservations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, phone, from, to, date, heure })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      msgEl.textContent = data.error || "La réservation n'a pas pu être enregistrée.";
+      msgEl.className = "msg error";
+      return;
+    }
+
+    reservations.push(data);
+    msgEl.textContent = "Réservation enregistrée.";
+    msgEl.className = "msg success";
+    document.getElementById("code-value").textContent = data.code;
+    codeBox.classList.remove("hidden");
+    document.getElementById("name").value = "";
+    document.getElementById("phone").value = "";
+    majPlacesInfo();
+  } catch (e) {
+    msgEl.textContent = "Connexion impossible. Vérifie ta connexion et réessaie.";
+    msgEl.className = "msg error";
+  } finally {
+    msgEl.classList.remove("hidden");
+    btn.disabled = false;
+    btn.textContent = "Confirmer la réservation";
+  }
+});
+
+async function updateStatus(id, status, btn) {
+  const original = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = "..."; }
+  try {
+    const res = await fetch(`/api/reservations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) throw new Error("echec");
+    const updated = await res.json();
+    reservations = reservations.map(r => r.id === updated.id ? updated : r);
+    renderAdmin();
+  } catch (e) {
+    alert("La mise à jour a échoué. Vérifie ta connexion et réessaie.");
+    if (btn) { btn.disabled = false; btn.textContent = original; }
+  }
+}
+
+function statusLabel(status) {
+  if (status === "en_attente") return { text: "En attente", cls: "attente" };
+  if (status === "confirmee") return { text: "Confirmée", cls: "confirmee" };
+  return { text: "Annulée", cls: "annulee" };
+}
+
+function renderAdmin() {
+  const list = document.getElementById("admin-list");
+  document.getElementById("admin-total").textContent = `${reservations.length} au total`;
+
+  if (reservations.length === 0) {
+    list.innerHTML = `<div class="card empty">Aucune réservation pour l'instant.</div>`;
+    return;
+  }
+
+  const groupes = {};
+  reservations.forEach(r => {
+    const key = `${r.trip_date}__${r.trip_from}__${r.trip_to}__${r.trip_time}`;
+    if (!groupes[key]) groupes[key] = { date: r.trip_date, from: r.trip_from, to: r.trip_to, heure: r.trip_time, items: [] };
+    groupes[key].items.push(r);
+  });
+
+  const groupesArray = Object.values(groupes).sort((a, b) => (a.date + a.heure).localeCompare(b.date + b.heure));
+
+  list.innerHTML = groupesArray.map(g => {
+    const confirmees = g.items.filter(i => i.status === "confirmee").length;
+    const enAttente = g.items.filter(i => i.status === "en_attente").length;
+    const rows = g.items.map(r => {
+      const s = statusLabel(r.status);
+      const actions = r.status === "en_attente"
+        ? `<button class="btn-sm confirm" onclick="updateStatus(${r.id}, 'confirmee', this)">Confirmer</button>
+           <button class="btn-sm cancel" onclick="updateStatus(${r.id}, 'annulee', this)">Annuler</button>`
+        : "";
+      return `
+        <div class="pax-row">
+          <div>
+            <div class="pax-name">${escapeHtml(r.name)}</div>
+            <div class="pax-meta">${escapeHtml(r.phone)} · code ${escapeHtml(r.code)}</div>
+          </div>
+          <div class="actions">
+            <span class="badge ${s.cls}">${s.text}</span>
+            ${actions}
+          </div>
+        </div>`;
+    }).join("");
+
+    return `
+      <div class="trip-card">
+        <div class="trip-head">
+          <div>
+            <div class="trip-title">${escapeHtml(g.from)} → ${escapeHtml(g.to)}</div>
+            <div class="trip-time">🕐 ${g.date} à ${g.heure}</div>
+          </div>
+          <div class="trip-stats">
+            <div class="confirmed">${confirmees}/${CAPACITE_BUS} confirmées</div>
+            <div class="pending">${enAttente} en attente</div>
+          </div>
+        </div>
+        ${rows}
+      </div>`;
+  }).join("");
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+chargerReservations();
+</script>
+
+</body>
+</html>
