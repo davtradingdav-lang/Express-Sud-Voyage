@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Agence — Express Sud Voyage</title>
+<style>
+  :root {
+    --vert: #0f3d2e;
+    --vert-fonce: #0a2e22;
+    --or: #c9a24b;
+    --fond: #f4f6f3;
+    --texte: #1c2620;
+    --texte-doux: rgba(28,38,32,0.6);
+    --blanc: #ffffff;
+    --erreur: #b3261e;
+    --erreur-fond: #fce8e6;
+    --succes: #1e7a4c;
+    --succes-fond: #e6f4ec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--fond);
+    color: var(--texte);
+  }
+  header {
+    background: var(--vert);
+    color: var(--fond);
+    padding: 20px;
+  }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 2px 0 0; font-size: 12.5px; color: var(--or); }
+  main { max-width: 720px; margin: 0 auto; padding: 20px; }
+  .admin-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .admin-head h2 { margin: 0; font-size: 16px; color: var(--vert); }
+  .admin-head span { font-size: 12.5px; color: var(--texte-doux); }
+  .msg {
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    margin-bottom: 14px;
+  }
+  .msg.error { background: var(--erreur-fond); color: var(--erreur); }
+  .trip-card {
+    background: var(--blanc);
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .trip-head {
+    background: var(--fond);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .trip-title { font-weight: 700; font-size: 14px; color: var(--vert); }
+  .trip-time { font-size: 12px; color: var(--texte-doux); margin-top: 2px; }
+  .trip-stats { text-align: right; font-size: 12px; }
+  .trip-stats .confirmed { font-weight: 700; color: var(--vert); }
+  .trip-stats .pending { color: var(--or); margin-top: 2px; }
+  .pax-row {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .pax-row:last-child { border-bottom: none; }
+  .pax-name { font-weight: 600; font-size: 14px; }
+  .pax-meta { font-size: 12px; color: var(--texte-doux); margin-top: 2px; }
+  .badge {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 7px;
+    white-space: nowrap;
+  }
+  .badge.attente { background: rgba(201,162,75,0.15); color: #8a6d1f; }
+  .badge.confirmee { background: var(--succes-fond); color: var(--succes); }
+  .badge.annulee { background: var(--erreur-fond); color: var(--erreur); }
+  .btn-sm {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 11px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-sm.confirm { background: var(--vert); color: var(--blanc); }
+  .btn-sm.cancel { background: transparent; border: 1px solid rgba(0,0,0,0.12); color: rgba(28,38,32,0.6); }
+  .actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--texte-doux);
+    font-size: 14px;
+    background: var(--blanc);
+    border-radius: 14px;
+  }
+  .refresh-btn {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--vert);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚌 Espace Agence — Express Sud Voyage</h1>
+  <p>Confirmez les paiements reçus au guichet</p>
+</header>
+
+<main>
+  <div id="global-error" class="msg error" style="display:none;"></div>
+
+  <div class="admin-head">
+    <h2>Réservations par trajet</h2>
+    <span id="admin-total">0 au total · <button class="refresh-btn" id="btn-refresh">Actualiser</button></span>
+  </div>
+
+  <div id="admin-list"></div>
+</main>
+
+<script>
+const CAPACITE_BUS = 45;
+let reservations = [];
+
+function showError(text) {
+  const el = document.getElementById("global-error");
+  el.textContent = text;
+  el.style.display = "block";
+}
+function hideError() {
+  document.getElementById("global-error").style.display = "none";
+}
+
+async function chargerReservations() {
+  try {
+    const res = await fetch("/api/reservations");
+    if (res.status === 401) {
+      showError("Session expirée. Recharge la page et reconnecte-toi.");
+      return;
+    }
+    if (!res.ok) throw new Error("Erreur reseau");
+    reservations = await res.json();
+    hideError();
+    renderAdmin();
+  } catch (e) {
+    showError("Impossible de charger les réservations. Vérifie ta connexion et réessaie.");
+  }
+}
+
+async function updateStatus(id, status, btn) {
+  const original = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = "..."; }
+  try {
+    const res = await fetch(`/api/reservations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+    if (res.status === 401) {
+      showError("Session expirée. Recharge la page et reconnecte-toi.");
+      return;
+    }
+    if (!res.ok) throw new Error("echec");
+    const updated = await res.json();
+    reservations = reservations.map(r => r.id === updated.id ? updated : r);
+    renderAdmin();
+  } catch (e) {
+    alert("La mise à jour a échoué. Vérifie ta connexion et réessaie.");
+    if (btn) { btn.disabled = false; btn.textContent = original; }
+  }
+}
+
+function statusLabel(status) {
+  if (status === "en_attente") return { text: "En attente", cls: "attente" };
+  if (status === "confirmee") return { text: "Confirmée", cls: "confirmee" };
+  return { text: "Annulée", cls: "annulee" };
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderAdmin() {
+  const list = document.getElementById("admin-list");
+  document.getElementById("admin-total").innerHTML =
+    `${reservations.length} au total · <button class="refresh-btn" id="btn-refresh">Actualiser</button>`;
+  document.getElementById("btn-refresh").addEventListener("click", chargerReservations);
+
+  if (reservations.length === 0) {
+    list.innerHTML = `<div class="empty">Aucune réservation pour l'instant.</div>`;
+    return;
+  }
+
+  const groupes = {};
+  reservations.forEach(r => {
+    const key = `${r.trip_date}__${r.trip_from}__${r.trip_to}__${r.trip_time}`;
+    if (!groupes[key]) groupes[key] = { date: r.trip_date, from: r.trip_from, to: r.trip_to, heure: r.trip_time, items: [] };
+    groupes[key].items.push(r);
+  });
+
+  const groupesArray = Object.values(groupes).sort((a, b) => (a.date + a.heure).localeCompare(b.date + b.heure));
+
+  list.innerHTML = groupesArray.map(g => {
+    const confirmees = g.items.filter(i => i.status === "confirmee").length;
+    const enAttente = g.items.filter(i => i.status === "en_attente").length;
+    const rows = g.items.map(r => {
+      const s = statusLabel(r.status);
+      const actions = r.status === "en_attente"
+        ? `<button class="btn-sm confirm" onclick="updateStatus(${r.id}, 'confirmee', this)">Confirmer le paiement</button>
+           <button class="btn-sm cancel" onclick="updateStatus(${r.id}, 'annulee', this)">Annuler</button>`
+        : "";
+      return `
+        <div class="pax-row">
+          <div>
+            <div class="pax-name">${escapeHtml(r.name)}</div>
+            <div class="pax-meta">${escapeHtml(r.phone)} · code ${escapeHtml(r.code)}</div>
+          </div>
+          <div class="actions">
+            <span class="badge ${s.cls}">${s.text}</span>
+            ${actions}
+          </div>
+        </div>`;
+    }).join("");
+
+    return `
+      <div class="trip-card">
+        <div class="trip-head">
+          <div>
+            <div class="trip-title">${escapeHtml(g.from)} → ${escapeHtml(g.to)}</div>
+            <div class="trip-time">🕐 ${g.date} à ${g.heure}</div>
+          </div>
+          <div class="trip-stats">
+            <div class="confirmed">${confirmees}/${CAPACITE_BUS} confirmées</div>
+            <div class="pending">${enAttente} en attente</div>
+          </div>
+        </div>
+        ${rows}
+      </div>`;
+  }).join("");
+}
+
+chargerReservations();
+</script>
+
+</body>
+</html>

@@ -9,9 +9,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const CAPACITE_BUS = 45;
 
+const ADMIN_USER = process.env.ADMIN_USER || "agence";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
 if (!process.env.DATABASE_URL) {
   console.error("ERREUR: la variable d'environnement DATABASE_URL n'est pas definie.");
   console.error("Sur Render, ajoute une base PostgreSQL et connecte-la a ce service.");
+}
+if (!ADMIN_PASSWORD) {
+  console.error("ERREUR: la variable d'environnement ADMIN_PASSWORD n'est pas definie.");
+  console.error("Sans elle, l'espace admin refusera tout acces (par securite).");
 }
 
 const pool = new Pool({
@@ -21,7 +28,6 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
 
 function genererCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -30,6 +36,39 @@ function genererCode() {
   return code;
 }
 
+// --- Authentification basique pour l'espace agence ---
+function requireAdminAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!ADMIN_PASSWORD) {
+    return res.status(503).send("Espace agence non configure. Contactez l'administrateur.");
+  }
+
+  if (!authHeader || !authHeader.startsWith("Basic ")) {
+    res.set("WWW-Authenticate", 'Basic realm="Espace Agence"');
+    return res.status(401).send("Authentification requise.");
+  }
+
+  const base64Credentials = authHeader.split(" ")[1];
+  const credentials = Buffer.from(base64Credentials, "base64").toString("utf-8");
+  const [user, password] = credentials.split(":");
+
+  if (user === ADMIN_USER && password === ADMIN_PASSWORD) {
+    return next();
+  }
+
+  res.set("WWW-Authenticate", 'Basic realm="Espace Agence"');
+  return res.status(401).send("Identifiants incorrects.");
+}
+
+// Page admin protegee (avant express.static pour bien intercepter la requete)
+app.get("/admin", requireAdminAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
+app.use(express.static(path.join(__dirname, "public")));
+
+// --- API ---
 app.get("/api/reservations", async (req, res) => {
   try {
     const result = await pool.query(
@@ -96,7 +135,8 @@ app.post("/api/reservations", async (req, res) => {
   }
 });
 
-app.patch("/api/reservations/:id", async (req, res) => {
+// Protegee : seuls les agents authentifies peuvent changer un statut
+app.patch("/api/reservations/:id", requireAdminAuth, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
