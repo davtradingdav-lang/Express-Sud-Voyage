@@ -95,13 +95,13 @@ app.post("/api/reservations", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    const countResult = await client.query(
-      `SELECT COUNT(*) FROM reservations
+    const lockResult = await client.query(
+      `SELECT id FROM reservations
        WHERE trip_from = $1 AND trip_to = $2 AND trip_date = $3 AND trip_time = $4 AND status != 'annulee'
        FOR UPDATE`,
       [from, to, date, heure]
     );
-    const prises = parseInt(countResult.rows[0].count, 10);
+    const prises = lockResult.rows.length;
 
     if (prises >= CAPACITE_BUS) {
       await client.query("ROLLBACK");
