@@ -66,6 +66,10 @@ app.get("/admin", requireAdminAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
+// Protéger aussi l'accès direct au fichier /admin.html (évite exposition via express.static)
+app.get("/admin.html", requireAdminAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
 app.use(express.static(path.join(__dirname, "public")));
 
 // --- API ---

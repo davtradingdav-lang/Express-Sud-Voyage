@@ -5,263 +5,168 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Espace Agence — Express Sud Voyage</title>
 <style>
-  :root {
-    --vert: #0f3d2e;
-    --vert-fonce: #0a2e22;
-    --or: #c9a24b;
-    --fond: #f4f6f3;
-    --texte: #1c2620;
-    --texte-doux: rgba(28,38,32,0.6);
-    --blanc: #ffffff;
-    --erreur: #b3261e;
-    --erreur-fond: #fce8e6;
-    --succes: #1e7a4c;
-    --succes-fond: #e6f4ec;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--fond);
-    color: var(--texte);
-  }
-  header {
-    background: var(--vert);
-    color: var(--fond);
-    padding: 20px;
-  }
-  header h1 { margin: 0; font-size: 18px; }
-  header p { margin: 2px 0 0; font-size: 12.5px; color: var(--or); }
-  main { max-width: 720px; margin: 0 auto; padding: 20px; }
-  .admin-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 14px;
-  }
-  .admin-head h2 { margin: 0; font-size: 16px; color: var(--vert); }
-  .admin-head span { font-size: 12.5px; color: var(--texte-doux); }
-  .msg {
-    padding: 12px;
-    border-radius: 10px;
-    font-size: 13.5px;
-    margin-bottom: 14px;
-  }
-  .msg.error { background: var(--erreur-fond); color: var(--erreur); }
-  .trip-card {
-    background: var(--blanc);
-    border-radius: 14px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    overflow: hidden;
-    margin-bottom: 14px;
-  }
-  .trip-head {
-    background: var(--fond);
-    padding: 12px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-  }
-  .trip-title { font-weight: 700; font-size: 14px; color: var(--vert); }
-  .trip-time { font-size: 12px; color: var(--texte-doux); margin-top: 2px; }
-  .trip-stats { text-align: right; font-size: 12px; }
-  .trip-stats .confirmed { font-weight: 700; color: var(--vert); }
-  .trip-stats .pending { color: var(--or); margin-top: 2px; }
-  .pax-row {
-    padding: 12px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    border-bottom: 1px solid rgba(0,0,0,0.04);
-  }
-  .pax-row:last-child { border-bottom: none; }
-  .pax-name { font-weight: 600; font-size: 14px; }
-  .pax-meta { font-size: 12px; color: var(--texte-doux); margin-top: 2px; }
-  .badge {
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 4px 9px;
-    border-radius: 7px;
-    white-space: nowrap;
-  }
-  .badge.attente { background: rgba(201,162,75,0.15); color: #8a6d1f; }
-  .badge.confirmee { background: var(--succes-fond); color: var(--succes); }
-  .badge.annulee { background: var(--erreur-fond); color: var(--erreur); }
-  .btn-sm {
-    font-size: 12px;
-    font-weight: 600;
-    padding: 7px 11px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .btn-sm.confirm { background: var(--vert); color: var(--blanc); }
-  .btn-sm.cancel { background: transparent; border: 1px solid rgba(0,0,0,0.12); color: rgba(28,38,32,0.6); }
-  .actions { display: flex; gap: 6px; flex-shrink: 0; }
-  .empty {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--texte-doux);
-    font-size: 14px;
-    background: var(--blanc);
-    border-radius: 14px;
-  }
-  .refresh-btn {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--vert);
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-decoration: underline;
-  }
+  :root{--vert:#0f3d2e;--fond:#f4f6f3;--texte:#1c2620;--texte-doux:rgba(28,38,32,0.6);--blanc:#ffffff;--succes:#1e7a4c;--erreur:#b3261e}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--fond);color:var(--texte)}
+  header{background:var(--vert);color:var(--blanc);padding:20px}
+  header h1{margin:0;font-size:18px}header p{margin:2px 0 0;font-size:12.5px;color:#c9a24b}
+  main{max-width:1000px;margin:0 auto;padding:20px}
+  .admin-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .admin-head h2{margin:0;font-size:18px}
+  .controls{display:flex;gap:10px;align-items:center}
+  .btn{padding:8px 12px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);background:#fff;cursor:pointer;font-weight:600}
+  .btn.primary{background:var(--vert);color:#fff;border-color:var(--vert)}
+  .msg{padding:12px;border-radius:10px;margin-bottom:14px}
+  .msg.error{background:#fce8e6;color:var(--erreur)}
+  table{width:100%;border-collapse:collapse;background:var(--blanc);border-radius:8px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.06)}
+  thead th{background:#f3f5f3;text-align:left;padding:10px 12px;font-size:13px;border-bottom:1px solid #eee}
+  tbody td{padding:10px 12px;border-bottom:1px solid #f2f2f2;font-size:13px}
+  .small{font-size:12px;color:var(--texte-doux)}
+  .badge{display:inline-block;padding:6px 8px;border-radius:8px;font-weight:700}
+  .badge.attente{background:rgba(201,162,75,0.12);color:#8a6d1f}
+  .badge.confirmee{background:#e6f4ec;color:var(--succes)}
+  .badge.annulee{background:#fce8e6;color:var(--erreur)}
+  .action-btn{padding:6px 9px;border-radius:7px;border:none;cursor:pointer;font-weight:600;margin-right:6px}
+  .action-btn.confirm{background:var(--vert);color:#fff}
+  .action-btn.cancel{background:transparent;border:1px solid #ddd}
+  @media (max-width:800px){table,thead,tbody,th,td,tr{display:block}thead{display:none}}
 </style>
 </head>
 <body>
 
 <header>
   <h1>🚌 Espace Agence — Express Sud Voyage</h1>
-  <p>Confirmez les paiements reçus au guichet</p>
+  <p>Gérez les réservations — accès administrateur protégé</p>
 </header>
 
 <main>
-  <div id="global-error" class="msg error" style="display:none;"></div>
+  <div id="global-error" class="msg error" style="display:none"></div>
 
   <div class="admin-head">
-    <h2>Réservations par trajet</h2>
-    <span id="admin-total">0 au total · <button class="refresh-btn" id="btn-refresh">Actualiser</button></span>
+    <h2>Tableau de bord — Réservations</h2>
+    <div class="controls">
+      <div id="admin-total" class="small">0 au total</div>
+      <button id="btn-refresh" class="btn">Actualiser</button>
+      <button id="btn-export" class="btn primary">Exporter CSV</button>
+    </div>
   </div>
 
-  <div id="admin-list"></div>
+  <div style="overflow:auto">
+    <table id="reservations-table" aria-live="polite">
+      <thead>
+        <tr>
+          <th>Date de réservation</th>
+          <th>Départ / Destination</th>
+          <th>Heure</th>
+          <th>Nom Complet</th>
+          <th>Téléphone</th>
+          <th>Code de réservation</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </main>
 
 <script>
-const CAPACITE_BUS = 45;
 let reservations = [];
 
-function showError(text) {
-  const el = document.getElementById("global-error");
-  el.textContent = text;
-  el.style.display = "block";
-}
-function hideError() {
-  document.getElementById("global-error").style.display = "none";
-}
+function showError(text){const el=document.getElementById('global-error');el.textContent=text;el.style.display='block'}
+function hideError(){document.getElementById('global-error').style.display='none'}
 
-async function chargerReservations() {
-  try {
-    const res = await fetch("/api/reservations");
-    if (res.status === 401) {
-      showError("Session expirée. Recharge la page et reconnecte-toi.");
-      return;
-    }
-    if (!res.ok) throw new Error("Erreur reseau");
+function escapeHtml(str){if(str===null||str===undefined) return '';const d=document.createElement('div');d.textContent=str;return d.innerHTML}
+
+function formatDateTime(value){if(!value) return '';const d=new Date(value);if(isNaN(d)) return value;return d.toLocaleString('fr-FR', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}
+function formatDate(value){if(!value) return '';const d=new Date(value);if(isNaN(d)) return value;return d.toLocaleDateString('fr-FR')}
+
+async function fetchReservations(){
+  try{
+    const res = await fetch('/api/reservations');
+    if(res.status===401){showError('Authentification requise. Recharge et reconnecte-toi.');return}
+    if(!res.ok) throw new Error('Erreur réseau');
     reservations = await res.json();
     hideError();
-    renderAdmin();
-  } catch (e) {
-    showError("Impossible de charger les réservations. Vérifie ta connexion et réessaie.");
-  }
+    renderTable();
+  }catch(e){showError('Impossible de charger les réservations.');}
 }
 
-async function updateStatus(id, status, btn) {
-  const original = btn ? btn.textContent : null;
-  if (btn) { btn.disabled = true; btn.textContent = "..."; }
-  try {
-    const res = await fetch(`/api/reservations/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status })
-    });
-    if (res.status === 401) {
-      showError("Session expirée. Recharge la page et reconnecte-toi.");
-      return;
-    }
-    if (!res.ok) throw new Error("echec");
-    const updated = await res.json();
-    reservations = reservations.map(r => r.id === updated.id ? updated : r);
-    renderAdmin();
-  } catch (e) {
-    alert("La mise à jour a échoué. Vérifie ta connexion et réessaie.");
-    if (btn) { btn.disabled = false; btn.textContent = original; }
-  }
-}
+function statusLabel(status){if(status==='en_attente') return ['En attente','attente']; if(status==='confirmee') return ['Confirmée','confirmee']; return ['Annulée','annulee']}
 
-function statusLabel(status) {
-  if (status === "en_attente") return { text: "En attente", cls: "attente" };
-  if (status === "confirmee") return { text: "Confirmée", cls: "confirmee" };
-  return { text: "Annulée", cls: "annulee" };
-}
-
-function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-function renderAdmin() {
-  const list = document.getElementById("admin-list");
-  document.getElementById("admin-total").innerHTML =
-    `${reservations.length} au total · <button class="refresh-btn" id="btn-refresh">Actualiser</button>`;
-  document.getElementById("btn-refresh").addEventListener("click", chargerReservations);
-
-  if (reservations.length === 0) {
-    list.innerHTML = `<div class="empty">Aucune réservation pour l'instant.</div>`;
-    return;
+function renderTable(){
+  const tbody = document.querySelector('#reservations-table tbody');
+  tbody.innerHTML='';
+  document.getElementById('admin-total').textContent = `${reservations.length} au total`;
+  if(reservations.length===0){
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--texte-doux)">Aucune réservation</td></tr>`;return
   }
 
-  const groupes = {};
-  reservations.forEach(r => {
-    const key = `${r.trip_date}__${r.trip_from}__${r.trip_to}__${r.trip_time}`;
-    if (!groupes[key]) groupes[key] = { date: r.trip_date, from: r.trip_from, to: r.trip_to, heure: r.trip_time, items: [] };
-    groupes[key].items.push(r);
+  reservations.forEach(r=>{
+    const [statText, statCls] = statusLabel(r.status);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(formatDateTime(r.created_at || r.trip_date))}</td>
+      <td>${escapeHtml(r.trip_from)} → ${escapeHtml(r.trip_to)}</td>
+      <td class="small">${escapeHtml(r.trip_time || '')}</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td class="small">${escapeHtml(r.phone)}</td>
+      <td class="small">${escapeHtml(r.code)}</td>
+      <td><span class="badge ${statCls}">${escapeHtml(statText)}</span></td>
+      <td>
+        ${r.status === 'en_attente' ? `<button class="action-btn confirm" data-id="${r.id}">Confirmer</button><button class="action-btn cancel" data-id="${r.id}">Annuler</button>` : ''}
+      </td>`;
+    tbody.appendChild(tr);
   });
 
-  const groupesArray = Object.values(groupes).sort((a, b) => (a.date + a.heure).localeCompare(b.date + b.heure));
-
-  list.innerHTML = groupesArray.map(g => {
-    const confirmees = g.items.filter(i => i.status === "confirmee").length;
-    const enAttente = g.items.filter(i => i.status === "en_attente").length;
-    const rows = g.items.map(r => {
-      const s = statusLabel(r.status);
-      const actions = r.status === "en_attente"
-        ? `<button class="btn-sm confirm" onclick="updateStatus(${r.id}, 'confirmee', this)">Confirmer le paiement</button>
-           <button class="btn-sm cancel" onclick="updateStatus(${r.id}, 'annulee', this)">Annuler</button>`
-        : "";
-      return `
-        <div class="pax-row">
-          <div>
-            <div class="pax-name">${escapeHtml(r.name)}</div>
-            <div class="pax-meta">${escapeHtml(r.phone)} · code ${escapeHtml(r.code)}</div>
-          </div>
-          <div class="actions">
-            <span class="badge ${s.cls}">${s.text}</span>
-            ${actions}
-          </div>
-        </div>`;
-    }).join("");
-
-    return `
-      <div class="trip-card">
-        <div class="trip-head">
-          <div>
-            <div class="trip-title">${escapeHtml(g.from)} → ${escapeHtml(g.to)}</div>
-            <div class="trip-time">🕐 ${g.date} à ${g.heure}</div>
-          </div>
-          <div class="trip-stats">
-            <div class="confirmed">${confirmees}/${CAPACITE_BUS} confirmées</div>
-            <div class="pending">${enAttente} en attente</div>
-          </div>
-        </div>
-        ${rows}
-      </div>`;
-  }).join("");
+  // bind actions
+  document.querySelectorAll('.action-btn.confirm').forEach(b=>b.addEventListener('click', e=>{
+    const id = e.currentTarget.getAttribute('data-id'); updateStatus(id,'confirmee', e.currentTarget);
+  }));
+  document.querySelectorAll('.action-btn.cancel').forEach(b=>b.addEventListener('click', e=>{
+    const id = e.currentTarget.getAttribute('data-id'); if(confirm('Confirmer l\'annulation ?')) updateStatus(id,'annulee', e.currentTarget);
+  }));
 }
 
-chargerReservations();
+async function updateStatus(id,status,btn){
+  const orig = btn ? btn.innerHTML : '';
+  if(btn) {btn.disabled=true; btn.innerHTML='...';}
+  try{
+    const res = await fetch(`/api/reservations/${id}`,{
+      method:'PATCH',
+      credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({status})
+    });
+    if(res.status===401){showError('Authentification requise.');return}
+    if(!res.ok) throw new Error('echec');
+    const updated = await res.json();
+    reservations = reservations.map(r=>r.id===updated.id?updated:r);
+    renderTable();
+  }catch(e){alert('La mise à jour a échoué.'); if(btn){btn.disabled=false;btn.innerHTML=orig;}}
+}
+
+function downloadCSV(filename, text){
+  const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+function exportCSV(){
+  if(!reservations.length){alert('Aucune donnée à exporter');return}
+  const header = ['Date de réservation','Départ','Destination','Heure','Nom Complet','Téléphone','Code','Statut'];
+  const rows = reservations.map(r=>[
+    formatDateTime(r.created_at || r.trip_date),
+    r.trip_from, r.trip_to, r.trip_time || '', r.name, r.phone, r.code, r.status
+  ]);
+  const csv = [header, ...rows].map(r=>r.map(cell=>`"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadCSV('reservations.csv', csv);
+}
+
+document.getElementById('btn-refresh').addEventListener('click', fetchReservations);
+document.getElementById('btn-export').addEventListener('click', exportCSV);
+
+fetchReservations();
 </script>
 
 </body>
