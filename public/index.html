@@ -327,7 +327,6 @@
 <nav>
   <div class="tabs">
     <button class="tab active" id="tab-client">Réserver</button>
-    <button class="tab" id="tab-admin">Espace agence</button>
   </div>
 </nav>
 
@@ -386,14 +385,6 @@
     </div>
   </section>
 
-  <section id="view-admin" class="hidden">
-    <div class="admin-head">
-      <h2>Réservations par trajet</h2>
-      <span id="admin-total">0 au total</span>
-    </div>
-    <div id="admin-list"></div>
-  </section>
-</main>
 
 <script>
 const VILLES = ["N'Djamena", "Moundou", "Doba", "Kélo", "Bongor"];
@@ -478,36 +469,12 @@ heureSelect.addEventListener("change", majPlacesInfo);
 majHoraires();
 
 const tabClient = document.getElementById("tab-client");
-const tabAdmin = document.getElementById("tab-admin");
 const viewClient = document.getElementById("view-client");
-const viewAdmin = document.getElementById("view-admin");
 
 tabClient.addEventListener("click", () => {
   tabClient.classList.add("active");
-  tabAdmin.classList.remove("active");
   viewClient.classList.remove("hidden");
-  viewAdmin.classList.add("hidden");
 });
-tabAdmin.addEventListener("click", () => {
-  tabAdmin.classList.add("active");
-  tabClient.classList.remove("active");
-  viewAdmin.classList.remove("hidden");
-  viewClient.classList.add("hidden");
-  chargerReservations();
-});
-
-async function chargerReservations() {
-  try {
-    const res = await fetch("/api/reservations");
-    if (!res.ok) throw new Error("Erreur reseau");
-    reservations = await res.json();
-    hideGlobalError();
-    renderAdmin();
-    majPlacesInfo();
-  } catch (e) {
-    showGlobalError("Impossible de charger les réservations. Vérifie ta connexion et recharge la page.");
-  }
-}
 
 document.getElementById("btn-book").addEventListener("click", async () => {
   const name = document.getElementById("name").value.trim();
@@ -573,97 +540,6 @@ document.getElementById("btn-book").addEventListener("click", async () => {
     btn.textContent = "Confirmer la réservation";
   }
 });
-
-async function updateStatus(id, status, btn) {
-  const original = btn ? btn.textContent : null;
-  if (btn) { btn.disabled = true; btn.textContent = "..."; }
-  try {
-    const res = await fetch(`/api/reservations/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status })
-    });
-    if (!res.ok) throw new Error("echec");
-    const updated = await res.json();
-    reservations = reservations.map(r => r.id === updated.id ? updated : r);
-    renderAdmin();
-  } catch (e) {
-    alert("La mise à jour a échoué. Vérifie ta connexion et réessaie.");
-    if (btn) { btn.disabled = false; btn.textContent = original; }
-  }
-}
-
-function statusLabel(status) {
-  if (status === "en_attente") return { text: "En attente", cls: "attente" };
-  if (status === "confirmee") return { text: "Confirmée", cls: "confirmee" };
-  return { text: "Annulée", cls: "annulee" };
-}
-
-function renderAdmin() {
-  const list = document.getElementById("admin-list");
-  document.getElementById("admin-total").textContent = `${reservations.length} au total`;
-
-  if (reservations.length === 0) {
-    list.innerHTML = `<div class="card empty">Aucune réservation pour l'instant.</div>`;
-    return;
-  }
-
-  const groupes = {};
-  reservations.forEach(r => {
-    const key = `${r.trip_date}__${r.trip_from}__${r.trip_to}__${r.trip_time}`;
-    if (!groupes[key]) groupes[key] = { date: r.trip_date, from: r.trip_from, to: r.trip_to, heure: r.trip_time, items: [] };
-    groupes[key].items.push(r);
-  });
-
-  const groupesArray = Object.values(groupes).sort((a, b) => (a.date + a.heure).localeCompare(b.date + b.heure));
-
-  list.innerHTML = groupesArray.map(g => {
-    const confirmees = g.items.filter(i => i.status === "confirmee").length;
-    const enAttente = g.items.filter(i => i.status === "en_attente").length;
-    const rows = g.items.map(r => {
-      const s = statusLabel(r.status);
-      const actions = r.status === "en_attente"
-        ? `<button class="btn-sm confirm" onclick="updateStatus(${r.id}, 'confirmee', this)">Confirmer</button>
-           <button class="btn-sm cancel" onclick="updateStatus(${r.id}, 'annulee', this)">Annuler</button>`
-        : "";
-      return `
-        <div class="pax-row">
-          <div>
-            <div class="pax-name">${escapeHtml(r.name)}</div>
-            <div class="pax-meta">${escapeHtml(r.phone)} · code ${escapeHtml(r.code)}</div>
-          </div>
-          <div class="actions">
-            <span class="badge ${s.cls}">${s.text}</span>
-            ${actions}
-          </div>
-        </div>`;
-    }).join("");
-
-    return `
-      <div class="trip-card">
-        <div class="trip-head">
-          <div>
-            <div class="trip-title">${escapeHtml(g.from)} → ${escapeHtml(g.to)}</div>
-            <div class="trip-time">🕐 ${g.date} à ${g.heure}</div>
-          </div>
-          <div class="trip-stats">
-            <div class="confirmed">${confirmees}/${CAPACITE_BUS} confirmées</div>
-            <div class="pending">${enAttente} en attente</div>
-          </div>
-        </div>
-        ${rows}
-      </div>`;
-  }).join("");
-}
-
-function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-chargerReservations();
 </script>
-
 </body>
 </html>
