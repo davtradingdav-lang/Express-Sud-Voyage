@@ -85,6 +85,23 @@ app.get("/api/reservations", async (req, res) => {
   }
 });
 
+app.get("/api/reservations/code/:code", async (req, res) => {
+  const { code } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT name, trip_from, trip_to, trip_date, trip_time, status FROM reservations WHERE LOWER(code) = LOWER($1)",
+      [code]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Code de reservation introuvable." });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Erreur GET /api/reservations/code/:code:", err);
+    res.status(500).json({ error: "Impossible de rechercher la reservation." });
+  }
+});
+
 app.post("/api/reservations", async (req, res) => {
   const { name, phone, from, to, date, heure } = req.body;
 

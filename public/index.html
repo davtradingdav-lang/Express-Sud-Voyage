@@ -327,6 +327,7 @@
 <nav>
   <div class="tabs">
     <button class="tab active" id="tab-client">Réserver</button>
+    <button class="tab" id="tab-follow">Suivre ma réservation</button>
   </div>
 </nav>
 
@@ -385,6 +386,26 @@
     </div>
   </section>
 
+  <section id="view-follow" class="hidden">
+    <div class="card">
+      <h2>🔎 Suivre ma réservation</h2>
+      <div class="row">
+        <div class="field">
+          <label>Code de réservation</label>
+          <input type="text" id="follow-code" placeholder="Entrez votre code">
+        </div>
+      </div>
+      <button class="primary" id="btn-follow">Vérifier</button>
+      <div id="follow-msg" class="msg hidden"></div>
+      <div id="follow-result" class="card hidden" style="margin-top:16px; padding:16px;">
+        <div class="label">Reservation</div>
+        <div><strong>Trajet:</strong> <span id="follow-trip"></span></div>
+        <div><strong>Date:</strong> <span id="follow-date"></span></div>
+        <div><strong>Heure:</strong> <span id="follow-time"></span></div>
+        <div><strong>Statut:</strong> <span id="follow-status"></span></div>
+      </div>
+    </div>
+  </section>
 
 <script>
 const VILLES = ["N'Djamena", "Sarh", "Koumra", "Doba", "Moundou", "Kélo", "Bongor", "Guelendeng"];
@@ -473,11 +494,89 @@ heureSelect.addEventListener("change", majPlacesInfo);
 majHoraires();
 
 const tabClient = document.getElementById("tab-client");
+const tabFollow = document.getElementById("tab-follow");
 const viewClient = document.getElementById("view-client");
+const viewFollow = document.getElementById("view-follow");
+
+const followCodeInput = document.getElementById("follow-code");
+const followBtn = document.getElementById("btn-follow");
+const followMsg = document.getElementById("follow-msg");
+const followResult = document.getElementById("follow-result");
+const followTrip = document.getElementById("follow-trip");
+const followDate = document.getElementById("follow-date");
+const followTime = document.getElementById("follow-time");
+const followStatus = document.getElementById("follow-status");
 
 tabClient.addEventListener("click", () => {
   tabClient.classList.add("active");
+  tabFollow.classList.remove("active");
   viewClient.classList.remove("hidden");
+  viewFollow.classList.add("hidden");
+});
+
+tabFollow.addEventListener("click", () => {
+  tabFollow.classList.add("active");
+  tabClient.classList.remove("active");
+  viewFollow.classList.remove("hidden");
+  viewClient.classList.add("hidden");
+  followMsg.classList.add("hidden");
+  followResult.classList.add("hidden");
+});
+
+function statusBadgeLabel(status) {
+  if (status === "en_attente") return { text: "En attente", cls: "attente" };
+  if (status === "confirmee") return { text: "Confirmée", cls: "confirmee" };
+  return { text: "Annulée", cls: "annulee" };
+}
+
+tabFollow.addEventListener("click", () => {
+  tabFollow.classList.add("active");
+  tabClient.classList.remove("active");
+  viewFollow.classList.remove("hidden");
+  viewClient.classList.add("hidden");
+});
+
+followBtn.addEventListener("click", async () => {
+  const code = followCodeInput.value.trim();
+  followMsg.classList.add("hidden");
+  followResult.classList.add("hidden");
+
+  if (!code) {
+    followMsg.textContent = "Merci de saisir votre code de réservation.";
+    followMsg.className = "msg error";
+    followMsg.classList.remove("hidden");
+    return;
+  }
+
+  followBtn.disabled = true;
+  followBtn.textContent = "Recherche...";
+
+  try {
+    const res = await fetch(`/api/reservations/code/${encodeURIComponent(code)}`);
+    if (res.status === 404) {
+      followMsg.textContent = "Code introuvable, vérifiez votre saisie.";
+      followMsg.className = "msg error";
+      followMsg.classList.remove("hidden");
+      return;
+    }
+    if (!res.ok) {
+      throw new Error("Erreur reseau");
+    }
+    const data = await res.json();
+    followTrip.textContent = `${data.trip_from} → ${data.trip_to}`;
+    followDate.textContent = data.trip_date;
+    followTime.textContent = data.trip_time;
+    const badge = statusBadgeLabel(data.status);
+    followStatus.innerHTML = `<span class="badge ${badge.cls}">${badge.text}</span>`;
+    followResult.classList.remove("hidden");
+  } catch (e) {
+    followMsg.textContent = "Impossible de vérifier le code. Réessayez plus tard.";
+    followMsg.className = "msg error";
+    followMsg.classList.remove("hidden");
+  } finally {
+    followBtn.disabled = false;
+    followBtn.textContent = "Vérifier";
+  }
 });
 
 document.getElementById("btn-book").addEventListener("click", async () => {
